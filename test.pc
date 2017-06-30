@@ -1,0 +1,53 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include "sqlca.h"
+
+EXEC SQL BEGIN DECLARE SECTION;
+
+ char user_passwd[20];
+ int bank_id;
+ char bank_name[30], bank_no[10]; 
+ 
+EXEC SQL END DECLARE SECTION;
+
+int main()
+{
+ int ret = 0;  
+ strcpy(user_passwd, "cfmmc/cfmmc");
+ 
+ EXEC SQL CONNECT:user_passwd;
+ if (sqlca.sqlcode != 0)
+ {
+	ret = sqlca.sqlcode; 
+	printf ("connct:err, %d\n", ret); 
+	return ret; 
+ } 
+
+ printf("connect ok\n");
+ 
+	EXEC SQL declare bank_cursor cursor for 
+	select bank_id, bank_no, bank_name from base_bank; 
+	printf("declare cursor ok\n");
+	
+	EXEC SQL OPEN bank_cursor; 
+	printf("open cursor ok\n");
+	
+	EXEC SQL WHENEVER NOT FOUND DO break; 
+	
+	while (1)
+	{
+		EXEC SQL FETCH bank_cursor into :bank_id, :bank_no, :bank_name; 
+		
+		printf("bank_id:%d, bank_no:%s,  bank_name:%s \n", bank_id, bank_no, bank_name);	
+	}
+	
+	EXEC SQL close bank_cursor; 
+	
+	EXEC SQL COMMIT WORK RELEASE; 
+	
+	printf ("Disconnect!\n"); 
+	
+	return ret;
+}
+
